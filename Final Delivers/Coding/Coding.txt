@@ -1,0 +1,81 @@
+import wiotp.sdk.device
+import time
+import random
+import ibmiotf.application
+import ibmiotf.device
+import requests, json
+
+myConfig = { #Configuration
+    "identity": {
+        "orgId": "gmybrq",
+        "typeId": "Project",
+        "deviceId":"Project_main"
+         
+},
+#API Key
+    "auth": {
+    "token": "1234567890"
+ }
+}
+def myCommandCallback(cmd):
+    print("Message received from IBM IoT Platform: %s" %cmd.data['command'])
+    m=cmd.data['command']
+
+client = wiotp.sdk.device.DeviceClient(config=myConfig, logHandlers=None)
+client.connect()
+
+#OpenWeatherMap Credentials
+BASE_URL = "https://api.openweathermap.org/data/2.5/weather?"
+CITY = "Nagercoil"
+URL = BASE_URL + "q=" + CITY + "&units=metric"+"&appid=" + "01df65417ab3968e3fc2a38c4aee27bb"
+
+while True:
+        response = requests.get(URL)
+   
+        data = response.json()
+    
+    #messge part
+        msg=random.randint(0,5)
+        if msg==1:
+            message=" HOSPITAL near by "
+        elif msg==2:
+            message=" FUEL PUMP near by "
+        elif msg==3:
+            message=" Feeling hungry!RESTAURANT Ahead "
+        else :
+            message=" SCHOOL ZONE!Slow Down Ahead "
+        
+    #Speed Limit part
+         
+        speed=random.randint(0,150)
+        if speed>=100:
+            speedMsg=" Limit Exceeded"
+        elif speed>=60 and speed<100:
+            speedMsg="Moderate"
+        else:
+            speedMsg="Slow"
+
+        #Diversion part
+        sign=random.randint(0,5)
+        if sign==1:
+            signMsg="Right Diversion"
+        elif sign==3:
+            signMsg="Left Diversion"
+        else:
+            signMsg="U Turn"
+
+        #Visibility
+        temperature= random.randint(0,100)
+        if temperature < 24:
+            visibility="Fog Ahead, Drive Slow"
+        elif temperature < 20:
+            visibility="Bad Weather"
+        else:
+            visibility="Clear Weather"
+        myData={'Temperature':temperature, 'Message':message, 'Sign':signMsg, 'Speed':speedMsg, 'Visibility':visibility}
+        client.publishEvent(eventId="status", msgFormat="json", data=myData, qos=0, onPublish=None) #PUBLISHING TO IOT WATSON
+        print("Published data Successfully: %s", myData)
+        client.commandCallback = myCommandCallback
+        time.sleep(5)
+
+Client.disconnect()
